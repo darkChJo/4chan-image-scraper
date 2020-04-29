@@ -8,6 +8,7 @@ import hashlib
 import base64
 import re
 
+# TODO: Implement concurrent downloading
 
 class Scraper:
     def __init__(self, url: str):
@@ -105,7 +106,7 @@ class Scraper:
             file.close()
             return file_md5 == md5
 
-    def Run(self) -> None:
+    def Scrape(self) -> None:
         self.__get_thread()
         self.__get_images()
 
