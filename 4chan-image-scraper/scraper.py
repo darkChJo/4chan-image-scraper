@@ -119,7 +119,7 @@ class InvalidThread(Exception):
         return "{} is an invalid thread URL.".format(self.message)
 
 
-def check_url(url):
+def check_url(url) -> bool:
     exp = re.compile(r"^(https:\/\/boards.4channel.org\/|https:\/\/boards.4chan.org\/)[a-z]{1,5}\/thread\/[0-9]*$")
     match = re.search(exp, url)
     return True if match else False
