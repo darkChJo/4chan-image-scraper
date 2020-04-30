@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import requests
 import json
 import sys
@@ -8,14 +7,17 @@ import hashlib
 import base64
 import re
 
-# TODO: Implement concurrent downloading
 
 class Scraper:
-    def __init__(self, url: str):
+    def __init__(self, url: str, keep_names: bool):
         self.__url = url
+        self.__keep_names = keep_names
+
         self.__board, self.__thread_id = self.__parse_url(url)
-        
         self.__destination = os.path.join(self.__board, self.__thread_id)
+
+        if self.__keep_names:
+            self.downloaded_files = []
 
         if not os.path.exists(self.__destination):
             os.makedirs(self.__destination)
@@ -50,7 +52,22 @@ class Scraper:
             self.__download_image(image)
     
     def __download_image(self, image: dict) -> None:
-        filename = str(image["tim"]) + image["ext"]
+        filename = ""
+
+        if self.__keep_names:
+            filename = image["filename"] + image["ext"]
+            self.downloaded_files.append(filename)
+            
+            if filename in self.downloaded_files[:-1]:
+                # filename_1 if there is already a file called filename
+                filename = "{0}_{1}{2}".format(
+                    image["filename"],
+                    self.downloaded_files.count(filename)-1,
+                    image["ext"]
+                )
+        else:
+            filename = str(image["tim"]) + image["ext"]
+        
         file_path = os.path.join(self.__destination, filename)
 
         # redownloads if file is corrupted or missing
@@ -64,16 +81,18 @@ class Scraper:
 
         response = requests.get("https://i.4cdn.org/{0}/{1}".format(
             self.__board,
-            filename
+            str(image["tim"]) + image["ext"]
         ))
 
         size = int(response.headers["Content-length"])
         dl = 0
-
+        
         try:
             with open(file_path, 'wb') as file:
                     for chunk in response.iter_content(chunk_size=1024):
                         if chunk:
+                            # TODO: Clean up progress bar because it looks bad with --keep_names flag
+
                             dl += len(chunk)
                             file.write(chunk)
 
@@ -134,7 +153,7 @@ def main(args) -> None:
         if valid == False:
             raise InvalidThread(url)
     
-    threads = [Scraper(url) for url in args.URLs]
+    threads = [Scraper(url, args.keep_names) for url in args.URLs]
     for thread in threads:
         thread.Scrape()
     
@@ -150,14 +169,13 @@ if __name__=="__main__":
 
     parser.add_argument(
         "URLs", nargs="+",
-        help="links to 4chan threads"
+        help="links to 4chan threads, for example"
     )
 
-    # TODO: Implement keeping name flag
-    #parser.add_argument(
-    #    "-k", "--keep-names", action="store_true",
-    #    help="keep original filenames, defaults to False"
-    #)
+    parser.add_argument(
+        "-k", "--keep-names", action="store_true",
+        help="keep original filenames, defaults to False"
+    )
 
     # TODO: Implement setting destination path flag
     #parser.add_argument(
