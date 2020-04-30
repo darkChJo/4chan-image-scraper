@@ -169,7 +169,7 @@ if __name__=="__main__":
 
     parser.add_argument(
         "URLs", nargs="+",
-        help="links to 4chan threads, for example"
+        help="links to 4chan threads"
     )
 
     parser.add_argument(
