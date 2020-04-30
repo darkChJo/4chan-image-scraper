@@ -1,2 +1,2 @@
-# utilities
-Cool utilities I made and (hopefully) use.
+# 4chan-thread-scraper
+Simple 4chan thread scraper.
