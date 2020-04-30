@@ -20,7 +20,7 @@ $ ./scraper.py https://boards.4chan.org/wg/thread/7587778
 ```
 
 ## Dependencies
-This script uses the [requests](https://pypi.org/project/requests/) library. The dependencies are listed in [requirements.txt](../blob/master/requirements.txt) and can be installed using ```pip```
+This script uses the [requests](https://pypi.org/project/requests/) library. The dependencies are listed in [requirements.txt](../master/requirements.txt) and can be installed using ```pip```
 ```bash
 pip install -r requirements.txt
 ```
