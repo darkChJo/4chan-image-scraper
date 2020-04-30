@@ -1,5 +1,5 @@
 # 4chan-image-scraper
-Simple 4chan image scraper.
+Simple 4chan image scraper with support for scraping multiple threads.
 
 ## Usage
 ```
