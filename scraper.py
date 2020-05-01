@@ -23,7 +23,7 @@ class Scraper:
         self.bar_character_limit = 20
 
         self.__get_thread()
-        
+
         if not os.path.exists(self.__destination):
             os.makedirs(self.__destination)
 
@@ -43,6 +43,7 @@ class Scraper:
             raise ThreadDoesNotExist(self.__board, self.__thread_id)
 
         self.__thread = json.loads(response.text)
+        print("Found thread with ID {} in board {}".format(self.__thread_id, self.__board))
 
     def __get_images(self) -> None:
         posts = self.__thread["posts"]
@@ -146,6 +147,7 @@ class Scraper:
     def Scrape(self) -> None:
         self.__get_thread()
         self.__get_images()
+        print("Finished scraping thread {} in board {}".format(self.__thread_id, self.board))
 
 
 class InvalidThreadURL(Exception):
