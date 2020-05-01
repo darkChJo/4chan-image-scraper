@@ -18,14 +18,14 @@ class Scraper:
 
         if self.__keep_names:
             self.downloaded_files = []
-
-        if not os.path.exists(self.__destination):
-            os.makedirs(self.__destination)
         
         self.bar_length = 20
         self.bar_character_limit = 20
 
         self.__get_thread()
+        
+        if not os.path.exists(self.__destination):
+            os.makedirs(self.__destination)
 
     def __parse_url(self, url: str) -> tuple:
         url = url.split("/") # ['https:', '', 'boards.4channel.org', 'g', 'thread', '51971506']
