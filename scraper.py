@@ -39,7 +39,7 @@ class Scraper:
             self.__thread_id
         ))
         if len(response.text) == 0:
-            raise InvalidThread(self.__url)
+            raise ThreadDoesNotExist(self.__board, self.__thread_id)
 
         self.__thread = json.loads(response.text)
 
@@ -130,13 +130,20 @@ class Scraper:
         self.__get_images()
 
 
-class InvalidThread(Exception):
-    def __init__(self, url):
+class InvalidThreadURL(Exception):
+    def __init__(self, url: str):
         self.message = url
-    
+
     def __str__(self) -> str:
         return "{} is an invalid thread URL.".format(self.message)
 
+class ThreadDoesNotExist(Exception):
+    def __init__(self, board: str, thread_id: str):
+        self.board = board
+        self.thread_id = thread_id
+
+    def __str__(self) -> str:
+        return "Thread with ID {} in board {} does not exist.".format(self.thread_id, self.board)
 
 def check_url(url) -> bool:
     exp = re.compile(r"^(https:\/\/boards.4channel.org\/|https:\/\/boards.4chan.org\/)[a-z]{1,5}\/thread\/[0-9]*$")
@@ -151,7 +158,7 @@ def main(args) -> None:
         valid = check_url(url)
         
         if valid == False:
-            raise InvalidThread(url)
+            raise InvalidThreadURL(url)
     
     threads = [Scraper(url, args.keep_names) for url in args.URLs]
     for thread in threads:
@@ -188,7 +195,10 @@ if __name__=="__main__":
     
     try:
         main(args)
-    except InvalidThread as err:
+    except InvalidThreadURL as err:
+        print(err)
+        exit(1)
+    except ThreadDoesNotExist as err:
         print(err)
         exit(1)
     except KeyboardInterrupt:
