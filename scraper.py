@@ -23,6 +23,7 @@ class Scraper:
             os.makedirs(self.__destination)
         
         self.bar_length = 20
+        self.bar_character_limit = 20
 
         self.__get_thread()
 
@@ -91,24 +92,17 @@ class Scraper:
             with open(file_path, 'wb') as file:
                     for chunk in response.iter_content(chunk_size=1024):
                         if chunk:
-                            # TODO: Clean up progress bar because it looks bad with --keep_names flag
-
                             dl += len(chunk)
                             file.write(chunk)
 
                             progress = dl / size
-
-                            bar_percent = int(round(progress * self.bar_length))
-                            bar = '█'*bar_percent + " "*(self.bar_length - bar_percent)
-
-                            sys.stdout.write("\r{0} of {1} {2} |{3}| {4:.2f}%".format(
-                                self.__image_count + 1, # adding 1 because it starts at 0
-                                self.__image_total,
+                            self.__draw_progress_bar(
+                                progress,
                                 filename,
-                                bar,
-                                progress * 100))
-                            
-                            sys.stdout.flush()
+                                self.__image_count,
+                                self.__image_total
+                            )
+
                     sys.stdout.write('\n')
 
         except KeyboardInterrupt:
@@ -124,6 +118,30 @@ class Scraper:
             file_md5 = hashlib.md5(data).hexdigest()
             file.close()
             return file_md5 == md5
+
+    def __draw_progress_bar(self, progress: float, filename: str,
+                            image_count: int, image_total: int) -> None:
+
+        bar_percent = int(round(progress * self.bar_length))
+        bar = '█'*bar_percent + " "*(self.bar_length - bar_percent)
+
+        if len(filename) < self.bar_character_limit:
+            filename = filename.ljust(self.bar_character_limit, ' ')
+        else:
+            filename = filename[:self.bar_character_limit-3]+"..."
+        
+        text = "\rDownloading {filename} |{bar}| {percent:.2f}% {current} of {total}".format(
+            filename=filename,
+            bar=bar,
+            percent=progress*100,
+            current=image_count,
+            total=image_total
+        )
+
+        sys.stdout.write(text)
+        sys.stdout.flush()
+
+        
 
     def Scrape(self) -> None:
         self.__get_thread()
