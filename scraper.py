@@ -152,19 +152,35 @@ def check_url(url) -> bool:
 
 
 def main(args) -> None:
+    exitcode = 0
     # check if the URLs are valid
     # inform user if not
+    validURLs = []
+
     for url in args.URLs:
-        valid = check_url(url)
+        try:
+            valid = check_url(url)
         
-        if valid == False:
-            raise InvalidThreadURL(url)
+            if valid == False:
+                raise InvalidThreadURL(url)
+            validURLs.append(url)
+        
+        except InvalidThreadURL as err:
+            print(err)
+            exitcode = 1
     
-    threads = [Scraper(url, args.keep_names) for url in args.URLs]
+    threads = []
+    for url in validURLs:
+        try:
+            threads.append(Scraper(url, args.keep_names))
+        except ThreadDoesNotExist as err:
+            print(err)
+            exitcode = 1
+
     for thread in threads:
         thread.Scrape()
-    
-    exit(0)
+
+    exit(exitcode)
 
 
 if __name__=="__main__":
@@ -195,12 +211,6 @@ if __name__=="__main__":
     
     try:
         main(args)
-    except InvalidThreadURL as err:
-        print(err)
-        exit(1)
-    except ThreadDoesNotExist as err:
-        print(err)
-        exit(1)
     except KeyboardInterrupt:
         print("\nProgram Aborted.")
         exit(130)
