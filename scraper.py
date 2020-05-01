@@ -145,9 +145,9 @@ class Scraper:
         
 
     def Scrape(self) -> None:
-        self.__get_thread()
+        print("Scraping thread {} in board {}".format(self.__thread_id, self.__board))
         self.__get_images()
-        print("Finished scraping thread {} in board {}".format(self.__thread_id, self.board))
+        print("Finished scraping thread {} in board {}".format(self.__thread_id, self.__board))
 
 
 class InvalidThreadURL(Exception):
