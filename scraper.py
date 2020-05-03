@@ -166,7 +166,7 @@ class ThreadDoesNotExist(Exception):
         return "Thread with ID {} in board {} does not exist.".format(self.thread_id, self.board)
 
 def check_url(url) -> bool:
-    exp = re.compile(r"^(https:\/\/boards.4channel.org\/|https:\/\/boards.4chan.org\/)[a-z]{1,5}\/thread\/[0-9]*$")
+    exp = re.compile(r"^(https:\/\/boards.4channel.org\/|https:\/\/boards.4chan.org\/)[a-z]{1,5}\/thread\/[0-9]{1,}$")
     match = re.search(exp, url)
     return True if match else False
 
