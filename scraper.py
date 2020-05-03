@@ -228,7 +228,7 @@ if __name__=="__main__":
     parser.add_argument(
         "--path", metavar="directory",
         default=".",
-        help="where to store the create the thread directories, defaults to './'"
+        help="where to create the thread directories, defaults to './'"
     )
 
     args = parser.parse_args()
