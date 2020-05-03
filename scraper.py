@@ -9,12 +9,12 @@ import re
 
 
 class Scraper:
-    def __init__(self, url: str, keep_names: bool):
+    def __init__(self, url: str, keep_names: bool, save_path: str):
         self.__url = url
         self.__keep_names = keep_names
 
         self.__board, self.__thread_id = self.__parse_url(url)
-        self.__destination = os.path.join(self.__board, self.__thread_id)
+        self.__destination = os.path.join(os.path.expanduser(save_path), self.__board, self.__thread_id)
 
         if self.__keep_names:
             self.downloaded_files = []
@@ -25,7 +25,12 @@ class Scraper:
         self.__get_thread()
 
         if not os.path.exists(self.__destination):
-            os.makedirs(self.__destination)
+            try:
+                os.makedirs(self.__destination)
+            except PermissionError:
+                print("Cannot scrape to {}: Insufficient Permissions".format(save_path))
+                exit(1)
+            print("Saving images to {}".format(self.__destination))
 
     def __parse_url(self, url: str) -> tuple:
         url = url.split("/") # ['https:', '', 'boards.4channel.org', 'g', 'thread', '51971506']
@@ -192,7 +197,7 @@ def main(args) -> None:
     threads = []
     for url in validURLs:
         try:
-            threads.append(Scraper(url, args.keep_names))
+            threads.append(Scraper(url, args.keep_names, args.path))
         except ThreadDoesNotExist as err:
             print(err)
             exitcode = 1
@@ -220,12 +225,11 @@ if __name__=="__main__":
         help="keep original filenames, defaults to False"
     )
 
-    # TODO: Implement setting destination path flag
-    #parser.add_argument(
-    #    "--path", metavar="directory",
-    #    default=".",
-    #    help="where to store the create the thread directories, defaults to './'"
-    #)
+    parser.add_argument(
+        "--path", metavar="directory",
+        default=".",
+        help="where to store the create the thread directories, defaults to './'"
+    )
 
     args = parser.parse_args()
     
