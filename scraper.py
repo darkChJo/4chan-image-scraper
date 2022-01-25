@@ -7,6 +7,8 @@ import hashlib
 import base64
 import re
 
+banned_threads = [9112225, 12370429]
+error_file = "error.txt"
 
 class Scraper:
     def __init__(self, url: str, keep_names: bool, save_path: str):
@@ -15,10 +17,11 @@ class Scraper:
 
         self.__board, self.__thread_id = self.__parse_url(url)
         self.__destination = os.path.join(os.path.expanduser(save_path), self.__board, self.__thread_id)
+        self.__json_filename = os.path.join(os.path.expanduser(save_path), self.__board, self.__thread_id, "{}.json".format(self.__thread_id))
 
         if self.__keep_names:
             self.downloaded_files = []
-        
+
         self.bar_length = 20
         self.bar_character_limit = 20
 
@@ -27,6 +30,8 @@ class Scraper:
         if not os.path.exists(self.__destination):
             try:
                 os.makedirs(self.__destination)
+                #self.__get_thread()
+                dump_json(self.__json_filename, self.__thread)
             except PermissionError:
                 print("Cannot scrape to {}: Insufficient Permissions".format(save_path))
                 exit(1)
@@ -57,14 +62,14 @@ class Scraper:
 
         for self.__image_count, image in enumerate(images):
             self.__download_image(image)
-    
+
     def __download_image(self, image: dict) -> None:
         filename = ""
 
         if self.__keep_names:
             filename = image["filename"] + image["ext"]
             self.downloaded_files.append(filename)
-            
+
             if filename in self.downloaded_files[:-1]:
                 # filename_1 if there is already a file called filename
                 filename = "{0}_{1}{2}".format(
@@ -74,7 +79,7 @@ class Scraper:
                 )
         else:
             filename = str(image["tim"]) + image["ext"]
-        
+
         file_path = os.path.join(self.__destination, filename)
 
         # redownloads if file is corrupted or missing
@@ -91,11 +96,13 @@ class Scraper:
             str(image["tim"]) + image["ext"]
         ))
 
-        size = int(response.headers["Content-length"])
-        dl = 0
-        
-        try:
-            with open(file_path, 'wb') as file:
+        #print("{} {}".format(response.url, response.status_code))
+        if response.status_code != 404:
+            size = int(response.headers["Content-length"])
+            dl = 0
+
+            try:
+                with open(file_path, 'wb') as file:
                     for chunk in response.iter_content(chunk_size=1024):
                         if chunk:
                             dl += len(chunk)
@@ -111,11 +118,15 @@ class Scraper:
 
                     sys.stdout.write('\n')
 
-        except KeyboardInterrupt:
-            os.remove(file_path)
-            raise KeyboardInterrupt
-        finally:
-            file.close()
+            except KeyboardInterrupt:
+                os.remove(file_path)
+                raise KeyboardInterrupt
+            finally:
+                file.close()
+        else:
+            with open(error_file, 'a') as f:
+                f.write("{}\t{}".format(self.__thread_id, response.url))
+
 
     def __md5check(self, path: str, md5: str) -> bool:
         """ https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file """
@@ -135,7 +146,7 @@ class Scraper:
             filename = filename.ljust(self.bar_character_limit, ' ')
         else:
             filename = filename[:self.bar_character_limit-3]+"..."
-        
+
         text = "\rDownloading {filename} |{bar}| {percent:.2f}% {current} of {total}".format(
             filename=filename,
             bar=bar,
@@ -147,7 +158,7 @@ class Scraper:
         sys.stdout.write(text)
         sys.stdout.flush()
 
-        
+
 
     def Scrape(self) -> None:
         print("Scraping thread {} in board {}".format(self.__thread_id, self.__board))
@@ -171,10 +182,31 @@ class ThreadDoesNotExist(Exception):
         return "Thread with ID {} in board {} does not exist.".format(self.thread_id, self.board)
 
 def check_url(url) -> bool:
-    exp = re.compile(r"^(https:\/\/boards.4channel.org\/|https:\/\/boards.4chan.org\/)[a-z]{1,5}\/thread\/[0-9]{1,}$")
+    exp = re.compile(r"^(https:\/\/boards.4channel.org\/|https:\/\/boards.4chan.org\/)[a-z]{1,5}\/thread\/[0-9]{1,}.*")
     match = re.search(exp, url)
     return True if match else False
 
+def dump_json(filename: str, obj: dict) -> None:
+    with open(filename, 'w') as f:
+        json.dump(obj, f)
+
+def get_live_threads(board: str) -> list:
+    response = requests.get("https://a.4cdn.org/{}/catalog.json".format(board))
+    catalog = json.loads(response.text)
+    threadnos = []
+    for page in catalog:
+        for post in page['threads']:
+            threadno = post['no']
+            if threadno not in banned_threads:
+                threadnos.append(threadno)
+    return threadnos
+
+def get_archived_threads(board: str) -> list:
+    response = requests.get("https://a.4cdn.org/{}/archive.json".format(board))
+    catalog = json.loads(response.text)
+    threadnos = catalog
+    threadnos.reverse()
+    return threadnos
 
 def main(args) -> None:
     exitcode = 0
@@ -185,15 +217,15 @@ def main(args) -> None:
     for url in args.URLs:
         try:
             valid = check_url(url)
-        
+
             if valid == False:
                 raise InvalidThreadURL(url)
             validURLs.append(url)
-        
+
         except InvalidThreadURL as err:
             print(err)
             exitcode = 1
-    
+
     threads = []
     for url in validURLs:
         try:
@@ -216,7 +248,7 @@ if __name__=="__main__":
     )
 
     parser.add_argument(
-        "URLs", nargs="+",
+        "URLs", nargs="*",
         help="links to 4chan threads"
     )
 
@@ -231,8 +263,17 @@ if __name__=="__main__":
         help="where to create the thread directories, defaults to './'"
     )
 
+    parser.add_argument(
+        "--board", metavar="board",
+        help="which board to download from"
+    )
+
     args = parser.parse_args()
-    
+
+    if not args.URLs and args.board:
+        board = args.board
+        threadnos = get_archived_threads(board)
+        args.URLs = ["https://boards.4chan.org/{}/thread/{}/".format(board, threadno) for threadno in threadnos]
     try:
         main(args)
     except KeyboardInterrupt:
