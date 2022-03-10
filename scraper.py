@@ -47,7 +47,8 @@ class Scraper:
     def __get_thread(self) -> None:
         response = requests.get("https://a.4cdn.org/{0}/thread/{1}.json".format(
             self.__board,
-            self.__thread_id
+            self.__thread_id,
+            timeout=5
         ))
         if len(response.text) == 0:
             raise ThreadDoesNotExist(self.__board, self.__thread_id)
@@ -93,7 +94,8 @@ class Scraper:
 
         response = requests.get("https://i.4cdn.org/{0}/{1}".format(
             self.__board,
-            str(image["tim"]) + image["ext"]
+            str(image["tim"]) + image["ext"],
+            timeout=5
         ))
 
         #print("{} {}".format(response.url, response.status_code))
@@ -121,11 +123,11 @@ class Scraper:
             except KeyboardInterrupt:
                 os.remove(file_path)
                 raise KeyboardInterrupt
-            finally:
-                file.close()
+            #finally:
+            #    file.close()
         else:
             with open(error_file, 'a') as f:
-                f.write("{}\t{}".format(self.__thread_id, response.url))
+                f.write("{}\t{}\n".format(self.__thread_id, response.url))
 
 
     def __md5check(self, path: str, md5: str) -> bool:
@@ -191,7 +193,7 @@ def dump_json(filename: str, obj: dict) -> None:
         json.dump(obj, f)
 
 def get_live_threads(board: str) -> list:
-    response = requests.get("https://a.4cdn.org/{}/catalog.json".format(board))
+    response = requests.get("https://a.4cdn.org/{}/catalog.json".format(board), timeout=5)
     catalog = json.loads(response.text)
     threadnos = []
     for page in catalog:
@@ -202,7 +204,7 @@ def get_live_threads(board: str) -> list:
     return threadnos
 
 def get_archived_threads(board: str) -> list:
-    response = requests.get("https://a.4cdn.org/{}/archive.json".format(board))
+    response = requests.get("https://a.4cdn.org/{}/archive.json".format(board), timeout=5)
     catalog = json.loads(response.text)
     threadnos = catalog
     threadnos.reverse()
