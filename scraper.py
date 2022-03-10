@@ -60,7 +60,7 @@ class Scraper:
         images = [post for post in posts if "tim" in post] # isolates posts that have an attachment from ones that don't
         self.__image_total = len(images)
 
-        for self.__image_count, image in enumerate(images):
+        for self.__image_count, image in enumerate(images, 1):
             self.__download_image(image)
 
     def __download_image(self, image: dict) -> None:
@@ -268,12 +268,27 @@ if __name__=="__main__":
         help="which board to download from"
     )
 
+    parser.add_argument(
+        "-a", "--no-archived", action="store_true",
+        help="Archived thread won't be downloaded, defaults to False"
+    )
+
+    parser.add_argument(
+        "-l", "--no-live", action="store_true",
+        help="Live threads won't be downloaded, defaults to False"
+    )
+
+
     args = parser.parse_args()
 
-    if not args.URLs and args.board:
+    if args.board:
         board = args.board
-        threadnos = get_archived_threads(board)
-        args.URLs = ["https://boards.4chan.org/{}/thread/{}/".format(board, threadno) for threadno in threadnos]
+        if not args.no_archived:
+            threadnos = get_archived_threads(board)
+            args.URLs += ["https://boards.4chan.org/{}/thread/{}/".format(board, threadno) for threadno in threadnos]
+        if not args.no_live:
+            threadnos = get_live_threads(board)
+            args.URLs += ["https://boards.4chan.org/{}/thread/{}/".format(board, threadno) for threadno in threadnos]
     try:
         main(args)
     except KeyboardInterrupt:
